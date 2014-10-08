@@ -10,10 +10,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.taxiapp.centraldetaxi.CentralDeTaxi;
+import com.taxiapp.centraldetaxi.Cliente;
 import com.taxiapp.centraldetaxi.Gps;
 import com.taxiapp.centraldetaxi.MockGps;
 import com.taxiapp.centraldetaxi.Taxi;
-import com.taxiapp.centraldetaxi.TaxiJaCadastradoException;
+import com.taxiapp.exceptions.PedidoEmAbertoException;
+import com.taxiapp.exceptions.TaxiJaCadastradoException;
 
 public class CentralDeTaxiTest {
 	private CentralDeTaxi central;
@@ -86,13 +88,22 @@ public class CentralDeTaxiTest {
 		central.cadastrarCliente(cliente);
 	}
 	
+	@Test(expected = PedidoEmAbertoException.class)
+	public void testaClienteSolicitaTaxiVariasComOutroHaPedidoAberto(){
+		Cliente cliente = new Cliente("NomeDoCliente");
+		Gps gps = new MockGps(4.0,3.0);
+		central.cadastrarPedidoCliente(cliente, gps);
+	}
+	
+	
 	@Test
 	public void testaClienteSolicitarTaxi(){
 		Cliente cliente = new Cliente("NomeDoCliente");
 		central.cadastrarCliente(cliente);
+		Gps localizacaoCliente = new MockGps(4.0, 3.0);
 		
-		central.cadastraPedidoCliente(cliente);
-		assertFalse(cliente.getPedido().isAtendido());
+		central.cadastrarPedidoCliente(cliente, localizacaoCliente);
+		assertEquals(cliente,central.getPedidoDoCliente(cliente).getCliente());
 	}
 		
 }
