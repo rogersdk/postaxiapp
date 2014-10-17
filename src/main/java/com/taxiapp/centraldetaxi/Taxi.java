@@ -1,28 +1,27 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.taxiapp.centraldetaxi;
 
-/**
- *
- * @author oswaldolinhares
- */
 public class Taxi {
-    private int numero;
-    private Gps gps;
-    public Taxi(int numero) {
-        this.numero = numero;
-    }
+	private int numero;
+	private Gps gps;
 
-    public Gps getGps() {
-        return gps;
-    }
+	public Taxi(int numero) {
+		this.numero = numero;
+	}
+	
+	public int getNumero(){
+		return this.numero;
+	}
+	
+	public Gps getGps() {
+		return gps;
+	}
 
-    public void setGps(Gps gps) {
-        this.gps = gps;
-    }
-    
-    
+	private void setGps(Gps gps) {
+		this.gps = gps;
+	}
+	
+	public void atualizarLocalizacao(Gps gps){
+		this.setGps(gps);
+	}
+	
 }
