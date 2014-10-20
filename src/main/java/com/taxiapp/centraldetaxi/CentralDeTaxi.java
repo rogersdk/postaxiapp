@@ -1,6 +1,8 @@
 package com.taxiapp.centraldetaxi;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -98,10 +100,26 @@ public class CentralDeTaxi {
 		pedido.setTaxi(taxi);
 	}
 	
-	public int getTempoDeAtendimentoDoTaxiAteCliente(Pedido pedido){
-		Double distancia = this.getDistancia(pedido.getCliente(), pedido.getTaxi());
+	public double getTempoDeAtendimentoDoTaxiAteCliente(Pedido pedido){
+		double velocidadeMedia = 11.1;
+		double distancia = this.getDistancia(pedido.getCliente(), pedido.getTaxi());
 		
-		return distancia.intValue() / 11;
+		return distancia / velocidadeMedia;
+	}
+
+	public boolean verificarDemoraAtendimento(Pedido pedido){
+		long tempoMaximoAtendimento = new Double(getTempoDeAtendimentoDoTaxiAteCliente(pedido)).longValue() * 2;
+		long horaPedidoMaisTempoDeAtendimento = pedido.getDataHora().getTime() + (tempoMaximoAtendimento*1000);
+		long horaAtual = new Date().getTime();
+		
+		if(horaPedidoMaisTempoDeAtendimento < horaAtual){
+			return true;
+		}
+		
+		return false;
 	}
 	
+	public void encaminharNovoTaxi(Pedido pedido, Taxi taxi){
+		pedido.setTaxi(taxi);
+	}
 }

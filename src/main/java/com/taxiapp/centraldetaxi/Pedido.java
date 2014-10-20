@@ -1,14 +1,22 @@
 package com.taxiapp.centraldetaxi;
 
+import java.util.Date;
+
 public class Pedido {
 	private Taxi taxi;
 	private Gps gps;
 	private Cliente cliente;
+	private Date dataHora;
 	private boolean atendido = false;
 	
 	public Pedido(Cliente cliente, Gps gps){
 		this.cliente = cliente;
 		this.gps = gps;
+		this.dataHora = new Date();
+	}
+	
+	public void atualizarHorarioAtendimento(Date dataHora){
+		this.dataHora = dataHora;
 	}
 	
 	public boolean isAtendido(){
@@ -29,5 +37,9 @@ public class Pedido {
 	
 	public Taxi getTaxi(){
 		return this.taxi;
+	}
+	
+	public Date getDataHora(){
+		return this.dataHora;
 	}
 }

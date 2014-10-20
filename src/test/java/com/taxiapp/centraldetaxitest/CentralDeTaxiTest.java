@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.sql.Timestamp;
 import java.util.List;
 
 import org.junit.Before;
@@ -12,6 +13,7 @@ import org.junit.Test;
 import com.taxiapp.centraldetaxi.CentralDeTaxi;
 import com.taxiapp.centraldetaxi.Cliente;
 import com.taxiapp.centraldetaxi.Gps;
+import com.taxiapp.centraldetaxi.MockDataHora;
 import com.taxiapp.centraldetaxi.MockGps;
 import com.taxiapp.centraldetaxi.Pedido;
 import com.taxiapp.centraldetaxi.Taxi;
@@ -98,16 +100,14 @@ public class CentralDeTaxiTest {
 	
 	@Test
 	public void ehPossivelCadastrarCliente(){
-		Cliente cliente = new Cliente("NomeDoCliente");	
+		Cliente cliente = this.criarClienteSimples();
 		central.cadastrarCliente(cliente);
 		assertEquals(1, central.getClientes().size());
 	}
 	
 	@Test(expected = PedidoEmAbertoException.class)
 	public void testaClienteSolicitaTaxiComOutroHaPedidoAberto(){
-		Cliente cliente = new Cliente("NomeDoCliente");
-		Gps gps = new MockGps(4.0,3.0);
-		cliente.atualizarLocalizacao(gps);
+		Cliente cliente = this.criarClienteSimples();
 		
 		central.cadastrarPedidoCliente(cliente);
 		central.cadastrarPedidoCliente(cliente);
@@ -118,9 +118,7 @@ public class CentralDeTaxiTest {
 	 * */
 	@Test
 	public void testaClienteSolicitarTaxi(){
-		Cliente cliente = new Cliente("NomeDoCliente");
-		Gps localizacaoCliente = new MockGps(4.0, 3.0);
-		cliente.atualizarLocalizacao(localizacaoCliente);
+		Cliente cliente = this.criarClienteSimples();
 		
 		central.cadastrarCliente(cliente);
 		central.cadastrarPedidoCliente(cliente);
@@ -130,52 +128,77 @@ public class CentralDeTaxiTest {
 	
 	/**
 	 * 4 - Quando um taxi for solicitado o tempo estimado para chegar deve ser calculado.
-	 * Velocidade media 40km/h ou =~11m/s.
-	 * Levando em consideracao que a cada 1 ponto de unidade de distancia equivale a 100 metros
-	 * o resultado sera dado em segundos
+	 * Velocidade media 40km/h ou =~11,1m/s.
 	 * */
 	@Test
-	public void testaCalculaTempoEstimadoParaChegarTaxiAteCliente(){
-		Cliente cliente = new Cliente("NomeDoCliente");
-		Gps localizacaoCliente = new MockGps(0.0, 0.0);
-		cliente.atualizarLocalizacao(localizacaoCliente);
-		
+	public void testaCalculaTempoEstimadoParaChegarTaxiAteCliente(){		
+		Cliente cliente = this.criarClienteSimples();
+
 		central.cadastrarCliente(cliente);
 		central.cadastrarPedidoCliente(cliente);
 		
-		Taxi taxi = new Taxi(1);
-		Gps localizacaoTaxi = new MockGps(9.219,6.1);
-		taxi.atualizarLocalizacao(localizacaoTaxi);
+		Taxi taxi = this.criaTaxiSimples(1, new MockGps(3,4));
 		
 		Pedido pedido = central.getPedidoEmAbertoDoCliente(cliente);
 		
 		central.taxiAceitaPedido(taxi,pedido);
 		
-		assertEquals(11.0, central.getDistancia(cliente, taxi), 0.1);
-		//assertEquals(1, central.getTempoDeAtendimentoDoTaxiAteCliente(pedido));
-		assertEquals(10, central.getTempoDeAtendimentoDoTaxiAteCliente(pedido));
+		assertEquals(5.0, central.getDistancia(cliente, taxi), 0.001);
+		assertEquals(0.450, central.getTempoDeAtendimentoDoTaxiAteCliente(pedido),0.1);
+		
+		taxi.atualizarLocalizacao(new MockGps(30,40));
+		assertEquals(4.504, central.getTempoDeAtendimentoDoTaxiAteCliente(pedido),0.1);
 	}
 	
 	
-	/*
-	@Test
-	public void testaTaxisReceberemNotificacao(){
-		Cliente cliente = new Cliente("NomeDoCliente");
-		Gps gpsCliente = new MockGps(4.0,3.0);
-		
-		Taxi taxi = new Taxi(1);
-		Gps gpsTaxi = new MockGps(10.5,4.0);
-		taxi.setGps(gpsTaxi);
-		
-		central.cadastrarCliente(cliente);
-		central.cadastrarTaxi(taxi);
-		
-	}
-	*/
-
-	@Test
 	public void testaEnviarNotificacaoTodosTaxisComRaioDefinido(){
 		
+	}
+	
+	/**
+	 * 5 - Se o taxista demorar mais de 2x o tempo estimado inicialmente, outro taxi dever ser encaminhado;
+	 * */
+	@Test
+	public void testaTaxistaDemora2xMaisOTempoEstimadoEnviarOutroTaxi(){
+		Cliente cliente = this.criarClienteSimples();
+		
+		central.cadastrarCliente(cliente);
+		central.cadastrarPedidoCliente(cliente);
+		Pedido pedido = central.getPedidoEmAbertoDoCliente(cliente);
+		MockDataHora dataHoraSistema = new MockDataHora(pedido.getDataHora());
+		
+		Taxi taxiUm = this.criaTaxiSimples(1, new MockGps(30,40));
+		Taxi taxiDois = this.criaTaxiSimples(1, new MockGps(60,80));
+		
+		central.cadastrarTaxi(taxiUm);
+		central.cadastrarTaxi(taxiDois);
+		
+		central.taxiAceitaPedido(taxiUm, pedido);
+		assertEquals(4.504, central.getTempoDeAtendimentoDoTaxiAteCliente(pedido),0.001);
+		assertFalse(central.verificarDemoraAtendimento(pedido));
+		
+		dataHoraSistema.atrasarSegundos(60);
+		pedido.atualizarHorarioAtendimento(dataHoraSistema.getDate());
+		
+		assertTrue(central.verificarDemoraAtendimento(pedido));
+		
+		central.encaminharNovoTaxi(pedido, taxiDois);
+		
+		assertEquals(taxiDois, pedido.getTaxi());
+		assertEquals(9.0, central.getTempoDeAtendimentoDoTaxiAteCliente(pedido),0.1);
+	}
+	
+	public Cliente criarClienteSimples(){
+		Cliente cliente = new Cliente("NomeDoCliente");
+		Gps localizacaoCliente = new MockGps(0.0, 0.0);
+		cliente.atualizarLocalizacao(localizacaoCliente);
+		return cliente;
+	}
+	
+	public Taxi criaTaxiSimples(int id, Gps gps){
+		Taxi taxi = new Taxi(1);
+		taxi.atualizarLocalizacao(gps);
+		return taxi;
 	}
 	
 }
