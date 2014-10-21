@@ -1,27 +1,31 @@
 package com.taxiapp.centraldetaxi;
 
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Observable;
+import java.util.Observer;
 
 import com.taxiapp.exceptions.PedidoEmAbertoException;
+import com.taxiapp.exceptions.TaxiJaAtendendoPedidoException;
 import com.taxiapp.exceptions.TaxiJaCadastradoException;
 
-public class CentralDeTaxi {
-	private List<Taxi> taxis = new ArrayList<Taxi>();
+public class CentralDeTaxi extends Observable{
+	private List<Observer> taxis = new ArrayList<Observer>();
 	private List<Cliente> clientes = new ArrayList<Cliente>();
 	private Map<Cliente, Pedido> pedidos = new HashMap<Cliente, Pedido>();
 
-	// List usar tipo mais generico caso precise ser trocado;
 	public void cadastrarTaxi(Taxi taxi) {
 		if (taxis.contains(taxi)) {
 			throw new TaxiJaCadastradoException();
 		}
-		taxis.add(taxi);
+		this.taxis.add(taxi);
+		this.addObserver(taxi);
+		taxi.setCentralDeTaxi(this);
 	}
 	
 	public List getClientes(){
@@ -33,22 +37,29 @@ public class CentralDeTaxi {
 	}
 	
 	public Taxi buscarTaxi(int id){
-		for(Taxi taxi: taxis){
+		Iterator iterator = taxis.iterator();
+		while(iterator.hasNext()){
+			Taxi taxi = (Taxi) iterator.next();
 			if(taxi.getNumero() == id){
 				return taxi;
 			}
 		}
+		
 		return null;
 	}
 
 	public List<Taxi> getTaxiProximos(double latitude, double longitude,
 			double raio) {
 		List<Taxi> taxisProximos = new ArrayList<Taxi>();
-		for (Taxi taxi : taxis) {
+		
+		Iterator iterator = taxis.iterator();
+		while(iterator.hasNext()){
+			Taxi taxi = (Taxi) iterator.next();
 			if (getDistancia(latitude, longitude, taxi) <= raio) {
 				taxisProximos.add(taxi);
 			}
 		}
+		
 		return taxisProximos;
 	}
 
@@ -69,9 +80,11 @@ public class CentralDeTaxi {
 		if(!verificaPedidoAbertoCliente(cliente)){
 			throw new PedidoEmAbertoException();
 		}
-		
+
 		Pedido pedido = new Pedido(cliente, cliente.getGps());
 		pedidos.put(cliente, pedido);
+		setChanged();
+		notifyObservers();
 	}
 
 	public Pedido getPedidoEmAbertoDoCliente(Cliente cliente) {
@@ -80,6 +93,18 @@ public class CentralDeTaxi {
 			Pedido pedidoValue = entry.getValue();
 			if(clienteKey.equals(cliente) && !pedidoValue.isAtendido()){
 				return pedidoValue;
+			}
+		}
+		return null;
+	}
+	
+	public Pedido getPedidoEmAtendimentoDoTaxi(Taxi taxi){
+		Iterator<Entry<Cliente, Pedido>> entries = pedidos.entrySet().iterator();
+		while(entries.hasNext()){
+			Entry<Cliente, Pedido> entry = (Entry) entries.next();
+			Pedido pedido = entry.getValue();
+			if( pedido.isAtendido() && pedido.getTaxi().equals(taxi)){
+				return pedido;
 			}
 		}
 		return null;
@@ -97,10 +122,21 @@ public class CentralDeTaxi {
 	}
 	
 	public void taxiAceitaPedido(Taxi taxi,Pedido pedido){
-		pedido.setTaxi(taxi);
+		if(getPedidoEmAtendimentoDoTaxi(taxi) != null){
+			throw new TaxiJaAtendendoPedidoException();
+		}
+		pedido.atender(taxi);
+	}
+	
+	public void taxiCancelaPedido(Taxi taxi){
+		Pedido pedido = this.getPedidoEmAtendimentoDoTaxi(taxi);
+		pedido.cancelarTaxi();
 	}
 	
 	public double getTempoDeAtendimentoDoTaxiAteCliente(Pedido pedido){
+		if(!pedido.isAtendido()){
+			throw new PedidoEmAbertoException();
+		}
 		double velocidadeMedia = 11.1;
 		double distancia = this.getDistancia(pedido.getCliente(), pedido.getTaxi());
 		
@@ -122,4 +158,10 @@ public class CentralDeTaxi {
 	public void encaminharNovoTaxi(Pedido pedido, Taxi taxi){
 		pedido.setTaxi(taxi);
 	}
+	
+	public void taxiInformaRecebimentoCliente(Taxi taxi){
+		Pedido pedido = this.getPedidoEmAtendimentoDoTaxi(taxi);
+		pedido.informarRecebimento();
+	}
+	
 }

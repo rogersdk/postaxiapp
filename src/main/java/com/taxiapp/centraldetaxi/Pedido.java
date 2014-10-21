@@ -8,6 +8,7 @@ public class Pedido {
 	private Cliente cliente;
 	private Date dataHora;
 	private boolean atendido = false;
+	private boolean recebimento = false;
 	
 	public Pedido(Cliente cliente, Gps gps){
 		this.cliente = cliente;
@@ -19,8 +20,26 @@ public class Pedido {
 		this.dataHora = dataHora;
 	}
 	
+	public void atender(Taxi taxi){
+		this.setTaxi(taxi);
+		this.atendido = true;
+	}
+	
+	public void cancelarTaxi(){
+		this.setTaxi(null);
+		this.atendido = false;
+	}
+	
+	public void informarRecebimento(){
+		this.recebimento = true;
+	}
+	
 	public boolean isAtendido(){
 		return atendido;
+	}
+	
+	public boolean isRecebimento(){
+		return recebimento;
 	}
 	
 	public Cliente getCliente(){

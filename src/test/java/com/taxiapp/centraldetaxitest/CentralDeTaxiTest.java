@@ -4,8 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.sql.Timestamp;
 import java.util.List;
+import java.util.Observable;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -18,6 +18,7 @@ import com.taxiapp.centraldetaxi.MockGps;
 import com.taxiapp.centraldetaxi.Pedido;
 import com.taxiapp.centraldetaxi.Taxi;
 import com.taxiapp.exceptions.PedidoEmAbertoException;
+import com.taxiapp.exceptions.TaxiJaAtendendoPedidoException;
 import com.taxiapp.exceptions.TaxiJaCadastradoException;
 
 public class CentralDeTaxiTest {
@@ -150,11 +151,6 @@ public class CentralDeTaxiTest {
 		assertEquals(4.504, central.getTempoDeAtendimentoDoTaxiAteCliente(pedido),0.1);
 	}
 	
-	
-	public void testaEnviarNotificacaoTodosTaxisComRaioDefinido(){
-		
-	}
-	
 	/**
 	 * 5 - Se o taxista demorar mais de 2x o tempo estimado inicialmente, outro taxi dever ser encaminhado;
 	 * */
@@ -188,8 +184,94 @@ public class CentralDeTaxiTest {
 		assertEquals(9.0, central.getTempoDeAtendimentoDoTaxiAteCliente(pedido),0.1);
 	}
 	
+	/**
+	 * 6 - o taxista pode cancelar uma corrida antes de chegar, neste caso outro taxi sera encaminhado;
+	 * */
+	@Test
+	public void testaTaxiCancelaCorridaEnviarOutro(){
+		Cliente cliente = this.criarClienteSimples();
+		
+		central.cadastrarCliente(cliente);
+		central.cadastrarPedidoCliente(cliente);
+		
+		Taxi taxi = this.criaTaxiSimples(1, new MockGps(30,40));
+		Taxi outroTaxi = this.criaTaxiSimples(2, new MockGps(100,100));
+		
+		central.cadastrarTaxi(taxi);
+		central.cadastrarTaxi(outroTaxi);
+		
+		Pedido pedido = central.getPedidoEmAbertoDoCliente(cliente);
+		
+		central.taxiAceitaPedido(taxi, pedido);
+		assertEquals(taxi, pedido.getTaxi());
+		
+		central.taxiCancelaPedido(taxi);
+		assertEquals(null, pedido.getTaxi());
+		
+		central.taxiAceitaPedido(outroTaxi,pedido);
+		assertEquals(outroTaxi, pedido.getTaxi());
+	}
+	
+	@Test(expected=TaxiJaAtendendoPedidoException.class)
+	public void testaTaxiAceitaPedidoPoremAindaEstaAtendendoOutroPedido(){
+		Cliente cliente = this.criarClienteSimples();
+		Cliente clienteDois = this.criarClienteSimplesDois();
+		
+		central.cadastrarCliente(cliente);
+		central.cadastrarCliente(clienteDois);
+		
+		central.cadastrarPedidoCliente(cliente);
+		central.cadastrarPedidoCliente(clienteDois);
+		
+		Taxi taxi = this.criaTaxiSimples(1, new MockGps(30,40));
+		
+		central.cadastrarTaxi(taxi);
+		
+		Pedido pedido = central.getPedidoEmAbertoDoCliente(cliente);
+		Pedido pedidoDois = central.getPedidoEmAbertoDoCliente(clienteDois);
+		
+		central.taxiAceitaPedido(taxi, pedido);
+		central.taxiAceitaPedido(taxi, pedidoDois);
+		assertEquals(taxi, pedido.getTaxi());
+		
+		central.taxiCancelaPedido(taxi);
+		assertEquals(null, pedido.getTaxi());
+
+	}
+	
+	/**
+	 * 7 - ao receber o cliente o taxista deve informar;
+	 * */
+	@Test
+	public void testaTaxiInformaRecebimentoCliente(){
+		Cliente cliente = this.criarClienteSimples();
+		
+		central.cadastrarCliente(cliente);
+		central.cadastrarPedidoCliente(cliente);
+		
+		Taxi taxi = this.criaTaxiSimples(1, new MockGps(30,40));
+
+		central.cadastrarTaxi(taxi);
+		
+		Pedido pedido = central.getPedidoEmAbertoDoCliente(cliente);
+		assertFalse(pedido.isRecebimento());
+		
+		central.taxiAceitaPedido(taxi, pedido);
+		assertEquals(taxi, pedido.getTaxi());
+		
+		central.taxiInformaRecebimentoCliente(taxi);
+		assertTrue(pedido.isRecebimento());
+	}
+	
 	public Cliente criarClienteSimples(){
 		Cliente cliente = new Cliente("NomeDoCliente");
+		Gps localizacaoCliente = new MockGps(0.0, 0.0);
+		cliente.atualizarLocalizacao(localizacaoCliente);
+		return cliente;
+	}
+	
+	public Cliente criarClienteSimplesDois(){
+		Cliente cliente = new Cliente("NomeDoClienteDois");
 		Gps localizacaoCliente = new MockGps(0.0, 0.0);
 		cliente.atualizarLocalizacao(localizacaoCliente);
 		return cliente;
