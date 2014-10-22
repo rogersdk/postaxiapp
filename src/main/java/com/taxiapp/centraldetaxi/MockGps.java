@@ -16,5 +16,13 @@ public class MockGps implements Gps {
 	public double getLongitude() {
 		return longitude;
 	}
+	
+	public double calculaDistancia(Gps gps) {
+		return getDistanciaEntreDoisPontos(latitude, gps.getLatitude(), longitude, gps.getLongitude());
+	}
+	
+	public double getDistanciaEntreDoisPontos(double xB, double xA, double yB, double yA){
+		return Math.sqrt( Math.pow((xB-xA), 2) + Math.pow(yB-yA, 2) );
+	}
 
 }

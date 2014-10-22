@@ -19,6 +19,8 @@ public class CentralDeTaxi extends Observable{
 	private List<Cliente> clientes = new ArrayList<Cliente>();
 	private Map<Cliente, Pedido> pedidos = new HashMap<Cliente, Pedido>();
 
+	public static double RAIO = 5000.0;
+	
 	public void cadastrarTaxi(Taxi taxi) {
 		if (taxis.contains(taxi)) {
 			throw new TaxiJaCadastradoException();
@@ -76,15 +78,15 @@ public class CentralDeTaxi extends Observable{
 	}
 
 	public void cadastrarPedidoCliente(Cliente cliente) {
-
 		if(!verificaPedidoAbertoCliente(cliente)){
 			throw new PedidoEmAbertoException();
 		}
 
 		Pedido pedido = new Pedido(cliente, cliente.getGps());
 		pedidos.put(cliente, pedido);
+		
 		setChanged();
-		notifyObservers();
+		notifyObservers(cliente.getGps());
 	}
 
 	public Pedido getPedidoEmAbertoDoCliente(Cliente cliente) {

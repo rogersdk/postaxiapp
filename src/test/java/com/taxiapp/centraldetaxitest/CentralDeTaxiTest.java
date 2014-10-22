@@ -120,8 +120,11 @@ public class CentralDeTaxiTest {
 	@Test
 	public void testaClienteSolicitarTaxi(){
 		Cliente cliente = this.criarClienteSimples();
+		Taxi taxi = this.criaTaxiSimples(1, new MockGps(3,4));
 		
 		central.cadastrarCliente(cliente);
+		central.cadastrarTaxi(taxi);
+		
 		central.cadastrarPedidoCliente(cliente);
 		
 		assertEquals(cliente,central.getPedidoEmAbertoDoCliente(cliente).getCliente());
@@ -159,15 +162,17 @@ public class CentralDeTaxiTest {
 		Cliente cliente = this.criarClienteSimples();
 		
 		central.cadastrarCliente(cliente);
-		central.cadastrarPedidoCliente(cliente);
-		Pedido pedido = central.getPedidoEmAbertoDoCliente(cliente);
-		MockDataHora dataHoraSistema = new MockDataHora(pedido.getDataHora());
 		
 		Taxi taxiUm = this.criaTaxiSimples(1, new MockGps(30,40));
 		Taxi taxiDois = this.criaTaxiSimples(1, new MockGps(60,80));
 		
 		central.cadastrarTaxi(taxiUm);
 		central.cadastrarTaxi(taxiDois);
+		
+		central.cadastrarPedidoCliente(cliente);
+		
+		Pedido pedido = central.getPedidoEmAbertoDoCliente(cliente);
+		MockDataHora dataHoraSistema = new MockDataHora(pedido.getDataHora());
 		
 		central.taxiAceitaPedido(taxiUm, pedido);
 		assertEquals(4.504, central.getTempoDeAtendimentoDoTaxiAteCliente(pedido),0.001);
@@ -192,7 +197,6 @@ public class CentralDeTaxiTest {
 		Cliente cliente = this.criarClienteSimples();
 		
 		central.cadastrarCliente(cliente);
-		central.cadastrarPedidoCliente(cliente);
 		
 		Taxi taxi = this.criaTaxiSimples(1, new MockGps(30,40));
 		Taxi outroTaxi = this.criaTaxiSimples(2, new MockGps(100,100));
@@ -200,6 +204,7 @@ public class CentralDeTaxiTest {
 		central.cadastrarTaxi(taxi);
 		central.cadastrarTaxi(outroTaxi);
 		
+		central.cadastrarPedidoCliente(cliente);
 		Pedido pedido = central.getPedidoEmAbertoDoCliente(cliente);
 		
 		central.taxiAceitaPedido(taxi, pedido);
@@ -220,14 +225,14 @@ public class CentralDeTaxiTest {
 		central.cadastrarCliente(cliente);
 		central.cadastrarCliente(clienteDois);
 		
-		central.cadastrarPedidoCliente(cliente);
-		central.cadastrarPedidoCliente(clienteDois);
-		
 		Taxi taxi = this.criaTaxiSimples(1, new MockGps(30,40));
 		
 		central.cadastrarTaxi(taxi);
 		
+		central.cadastrarPedidoCliente(cliente);
 		Pedido pedido = central.getPedidoEmAbertoDoCliente(cliente);
+		
+		central.cadastrarPedidoCliente(clienteDois);
 		Pedido pedidoDois = central.getPedidoEmAbertoDoCliente(clienteDois);
 		
 		central.taxiAceitaPedido(taxi, pedido);
@@ -262,6 +267,23 @@ public class CentralDeTaxiTest {
 		central.taxiInformaRecebimentoCliente(taxi);
 		assertTrue(pedido.isRecebimento());
 	}
+	
+	/**
+	 * Todos os taxis num raio de 5km ou 5000m devem ser notificados;
+	 * */
+	@Test
+	public void testaSomenteTaxiNoRaioDeCincoMilMetrosRecebeNotificacao(){
+		Cliente cliente = this.criarClienteSimples();
+		Taxi taxi = this.criaTaxiSimples(777, new MockGps(300,400));
+		Taxi taxiDois = this.criaTaxiSimples(999, new MockGps(3001,4000));
+		
+		central.cadastrarCliente(cliente);
+		central.cadastrarTaxi(taxi);
+		central.cadastrarTaxi(taxiDois);
+		
+		central.cadastrarPedidoCliente(cliente);
+	}
+	
 	
 	public Cliente criarClienteSimples(){
 		Cliente cliente = new Cliente("NomeDoCliente");

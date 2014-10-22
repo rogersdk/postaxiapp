@@ -58,11 +58,18 @@ public class Taxi implements Observer{
 
 	@Override
 	public void update(Observable centralInfSubject, Object arg1) {
-		// TODO Auto-generated method stub
-		if (centralDeTaxi instanceof CentralDeTaxi) {
-			CentralDeTaxi centralDeTaxi = (CentralDeTaxi) centralInfSubject;
-			System.out.println("Taxi "+this.numero+" recebe notificação de novo pedido de taxi registrado.");
+		double distancia = this.gps.calculaDistancia((Gps) arg1);
+		if(distancia <= CentralDeTaxi.RAIO){
+			System.out.println("Taxi "+this.numero+" recebe notificação de novo pedido de taxi, pois está há:"+distancia+" metros de distância.");
 		}
+		
+		/*if (centralDeTaxi instanceof CentralDeTaxi) {
+			if(this.gps.calculaDistancia( (Gps) arg1) <= CentralDeTaxi.RAIO){
+				System.out.println("Taxi "+this.numero+" recebe notificação de novo pedido de taxi registrado.");
+			}
+			CentralDeTaxi centralDeTaxi = (CentralDeTaxi) centralInfSubject;
+		}*/
+		
 	}
 	
 	public void setCentralDeTaxi(Observable centralDeTaxi){
