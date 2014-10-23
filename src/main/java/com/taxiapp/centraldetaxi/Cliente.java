@@ -12,6 +12,10 @@ public class Cliente {
 		this.gps = gps;
 	}
 	
+	public String getNome(){
+		return this.nome;
+	}
+	
 	public Gps getGps(){
 		return this.gps;
 	}

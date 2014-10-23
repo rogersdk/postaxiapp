@@ -25,4 +25,12 @@ public class MockGps implements Gps {
 		return Math.sqrt( Math.pow((xB-xA), 2) + Math.pow(yB-yA, 2) );
 	}
 
+	@Override
+	public String toString() {
+		return "MockGps [latitude=" + latitude + ", longitude=" + longitude
+				+ "]";
+	}
+
+	
+	
 }

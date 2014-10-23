@@ -86,7 +86,7 @@ public class CentralDeTaxi extends Observable{
 		pedidos.put(cliente, pedido);
 		
 		setChanged();
-		notifyObservers(cliente.getGps());
+		notifyObservers(pedido);
 	}
 
 	public Pedido getPedidoEmAbertoDoCliente(Cliente cliente) {
@@ -123,11 +123,13 @@ public class CentralDeTaxi extends Observable{
 		return true;
 	}
 	
-	public void taxiAceitaPedido(Taxi taxi,Pedido pedido){
+	public void taxiAceitaPedido(Taxi taxi, Pedido pedido){
 		if(getPedidoEmAtendimentoDoTaxi(taxi) != null){
 			throw new TaxiJaAtendendoPedidoException();
 		}
 		pedido.atender(taxi);
+		setChanged();
+		notifyObservers(pedido);
 	}
 	
 	public void taxiCancelaPedido(Taxi taxi){

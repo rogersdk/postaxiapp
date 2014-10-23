@@ -292,6 +292,28 @@ public class CentralDeTaxiTest {
 		return cliente;
 	}
 	
+	/**
+	 * Testa o fluxo desejado
+	 * */
+	@Test
+	public void testaFluxoDesajado(){
+		Cliente cliente = this.criarClienteSimples();
+		Taxi taxiUm = this.criaTaxiSimples(1, new MockGps(30,40));
+		Taxi taxiDois = this.criaTaxiSimples(2232, new MockGps(300,400));
+		Taxi taxiTres = this.criaTaxiSimples(3, new MockGps(4000,8000));
+		
+		central.cadastrarCliente(cliente);
+		central.cadastrarTaxi(taxiUm);
+		central.cadastrarTaxi(taxiDois);
+		central.cadastrarTaxi(taxiTres);
+		
+		central.cadastrarPedidoCliente(cliente);
+		Pedido pedido = central.getPedidoEmAbertoDoCliente(cliente);
+		
+		central.taxiAceitaPedido(taxiUm, pedido);
+		
+	}
+	
 	public Cliente criarClienteSimplesDois(){
 		Cliente cliente = new Cliente("NomeDoClienteDois");
 		Gps localizacaoCliente = new MockGps(0.0, 0.0);
@@ -300,9 +322,10 @@ public class CentralDeTaxiTest {
 	}
 	
 	public Taxi criaTaxiSimples(int id, Gps gps){
-		Taxi taxi = new Taxi(1);
+		Taxi taxi = new Taxi(id);
 		taxi.atualizarLocalizacao(gps);
 		return taxi;
 	}
+	
 	
 }
